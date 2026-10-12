@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CovenMark, ShieldIcon } from "./Icons";
 
-// One footer for the landing page and the signed-in shell. It carries what every visitor should
+// One footer for every page, rendered once from app/layout.tsx. It carries what every visitor should
 // see each time: where things are, where the contracts live, and a standing safety notice.
 
 const GITHUB_URL = "https://github.com/MarvyNwaokobia/Coven";
@@ -79,9 +82,17 @@ function shorten(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export default function SiteFooter({ className = "" }: { className?: string }) {
+// Routes that are not wrapped in AppShell (no sidebar, no bottom tab bar).
+const STANDALONE = ["/signup", "/onboard", "/auth"];
+
+export default function SiteFooter() {
+  const pathname = usePathname();
+  const inShell =
+    pathname !== "/" && !STANDALONE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
   return (
-    <footer className={`border-t border-line bg-surface ${className}`}>
+    // Inside the app, clear the fixed sidebar (desktop) and the bottom tab bar (mobile).
+    <footer className={`border-t border-line bg-surface ${inShell ? "pb-20 lg:pb-0 lg:pl-64" : ""}`}>
       {/* Standing safety notice: shown on every page, every time */}
       <div className="border-b border-warn-line bg-warn-soft">
         <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-5 py-3 lg:px-8">
