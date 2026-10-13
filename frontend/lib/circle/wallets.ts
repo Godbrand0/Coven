@@ -10,6 +10,7 @@
  * See: https://developers.circle.com/wallets/user-controlled/build-a-wallet-app
  */
 import { getUsdcContract } from "@/lib/contracts";
+import { assertNetworkEnv, CIRCLE_BLOCKCHAIN } from "@/lib/network";
 
 const CIRCLE_API = "https://api.circle.com/v1/w3s";
 
@@ -25,6 +26,7 @@ export class CircleApiError extends Error {
 }
 
 function headers(extra?: Record<string, string>) {
+  assertNetworkEnv();
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${process.env.CIRCLE_API_KEY}`,
@@ -76,7 +78,7 @@ export async function initializeUserWallet(
       body: JSON.stringify({
         idempotencyKey: crypto.randomUUID(),
         accountType: "SCA",
-        blockchains: [process.env.CIRCLE_BLOCKCHAIN ?? "ARC-TESTNET"],
+        blockchains: [CIRCLE_BLOCKCHAIN],
       }),
     });
   } catch (e) {
