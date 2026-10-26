@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NETWORK, NETWORK_LABEL } from "@/lib/network";
 import { CovenMark, ShieldIcon } from "./Icons";
 
 // One footer for every page, rendered once from app/layout.tsx. It carries what every visitor should
 // see each time: where things are, where the contracts live, and a standing safety notice.
 
 const GITHUB_URL = "https://github.com/MarvyNwaokobia/Coven";
-const EXPLORER_URL = "https://explorer.testnet.arc.io";
+// Mainnet has no default: set NEXT_PUBLIC_EXPLORER_URL, or the addresses show without a link.
+const EXPLORER_URL =
+  process.env.NEXT_PUBLIC_EXPLORER_URL ??
+  (NETWORK === "testnet" ? "https://explorer.testnet.arc.io" : undefined);
 
 interface FooterLink {
   label: string;
@@ -118,11 +122,11 @@ export default function SiteFooter() {
             </Link>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-soft">
               Social USDC payments on Arc. Send to an @username, split bills, save toward shared
-              goals and cash out to a local bank.
+              goals, with cash out to a local bank coming soon.
             </p>
             <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-pos">
               <span aria-hidden="true" className="h-2 w-2 rounded-full bg-pos" />
-              Arc Testnet
+              {NETWORK_LABEL}
             </p>
             <div className="mt-4">
               <a
@@ -166,7 +170,7 @@ export default function SiteFooter() {
             {CONTRACTS.map((c) => (
               <li key={c.name} className="flex items-center gap-1.5">
                 <span>{c.name}:</span>
-                {c.address ? (
+                {c.address && EXPLORER_URL ? (
                   <a
                     href={`${EXPLORER_URL}/address/${c.address}`}
                     target="_blank"
@@ -176,7 +180,7 @@ export default function SiteFooter() {
                     {shorten(c.address)} <span aria-hidden="true">↗</span>
                   </a>
                 ) : (
-                  <span>not configured</span>
+                  <span>{c.address ? shorten(c.address) : "not configured"}</span>
                 )}
               </li>
             ))}
