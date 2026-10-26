@@ -21,11 +21,13 @@ function readPreference(): string {
  */
 export function useCurrency(): {
   currency: DisplayCurrency;
+  /** False until the saved preference and detected currency are read, so callers don't act on the NGN placeholder. */
+  ready: boolean;
   preference: string;
   setPreference: (p: string) => void;
 } {
   const [preference, setPref] = useState<string>(AUTO);
-  const [detected, setDetected] = useState<string>("NGN");
+  const [detected, setDetected] = useState<string | null>(null);
 
   useEffect(() => {
     setPref(readPreference());
@@ -42,5 +44,5 @@ export function useCurrency(): {
   }, []);
 
   const currency = getCurrency(preference === AUTO ? detected : preference) ?? getCurrency("NGN")!;
-  return { currency, preference, setPreference };
+  return { currency, ready: detected !== null, preference, setPreference };
 }

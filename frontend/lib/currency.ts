@@ -16,10 +16,6 @@ export const DISPLAY_CURRENCIES: DisplayCurrency[] = [
   { code: "GHS", symbol: "₵", name: "Ghanaian Cedi", countries: ["GH"] },
   { code: "KES", symbol: "KSh ", name: "Kenyan Shilling", countries: ["KE"] },
   { code: "ZAR", symbol: "R", name: "South African Rand", countries: ["ZA"] },
-  { code: "UGX", symbol: "USh ", name: "Ugandan Shilling", countries: ["UG"] },
-  { code: "TZS", symbol: "TSh ", name: "Tanzanian Shilling", countries: ["TZ"] },
-  { code: "RWF", symbol: "FRw ", name: "Rwandan Franc", countries: ["RW"] },
-  { code: "XAF", symbol: "FCFA ", name: "Central African CFA Franc", countries: ["CM"] },
   { code: "USD", symbol: "$", name: "US Dollar", countries: ["US"] },
 ];
 
@@ -35,10 +31,6 @@ const TIMEZONE_COUNTRY: Record<string, string> = {
   "Africa/Accra": "GH",
   "Africa/Nairobi": "KE",
   "Africa/Johannesburg": "ZA",
-  "Africa/Kampala": "UG",
-  "Africa/Dar_es_Salaam": "TZ",
-  "Africa/Kigali": "RW",
-  "Africa/Douala": "CM",
 };
 
 function currencyForCountry(country: string | null | undefined): string | null {

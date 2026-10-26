@@ -40,7 +40,7 @@ const QUICK_ACTIONS = [
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { currency, preference, setPreference } = useCurrency();
+  const { currency, ready, preference, setPreference } = useCurrency();
   const [balance, setBalance] = useState<{ usdc: string } | null>(null);
   const [estimate, setEstimate] = useState<{ code: string; amount: number } | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -64,7 +64,7 @@ export default function HomePage() {
 
   // Refetch the estimate when the currency changes; USDC itself is currency-independent.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ready) return;
     let stale = false;
     api<{ usdc: string; localEstimate: number; localCurrency: string }>(
       `/api/balance?currency=${currency.code}`
@@ -78,7 +78,7 @@ export default function HomePage() {
     return () => {
       stale = true;
     };
-  }, [user, currency.code]);
+  }, [user, ready, currency.code]);
 
   async function payRequest(id: string) {
     setPendingId(id);
