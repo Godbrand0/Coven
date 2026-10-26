@@ -26,6 +26,7 @@ import {
 } from "@/components/Icons";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/lib/useAuth";
+import { NETWORK_LABEL } from "@/lib/network";
 import type { BankAccount } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -197,7 +198,7 @@ export default function SettingsPage() {
             <div className="min-w-0">
               <p className="text-sm font-bold text-ink">Network</p>
               <p className="text-xs text-ink-mute">
-                Arc Testnet · sub-500ms settlement · zero gas on P2P
+                {NETWORK_LABEL} · sub-500ms settlement · zero gas on P2P
               </p>
             </div>
           </Card>

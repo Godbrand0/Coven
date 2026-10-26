@@ -3,6 +3,7 @@
  * The relayer key executes platform transactions (fee collection, escrow reads).
  */
 import { ethers } from "ethers";
+import { assertNetworkEnv } from "@/lib/network";
 
 export const PAYCIRCLE_ABI = [
   "function send(address recipient, uint256 amount, string note) returns (bytes32)",
@@ -68,6 +69,7 @@ export const USDC_ABI = [
 ];
 
 export function getArcProvider(): ethers.JsonRpcProvider {
+  assertNetworkEnv();
   return new ethers.JsonRpcProvider(process.env.ARC_RPC_URL);
 }
 

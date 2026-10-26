@@ -12,6 +12,7 @@
  * the relayer key.
  */
 import { ethers } from "ethers";
+import { assertCrossChainEnabled } from "@/lib/network";
 import type { WalletClient, Address } from "viem";
 import {
   CctpClient,
@@ -100,6 +101,7 @@ export async function initiateXChainPayment(params: {
       }
     };
     const onError = () => {
+  assertCrossChainEnabled();
       // Errors that land before we've captured a burn tx hash are real
       // failures (e.g. approval rejected). Errors afterward are the SDK's
       // own relay attempt failing without a destination wallet - expected
@@ -126,6 +128,7 @@ export async function relayToArc(params: {
   sourceTxHash: `0x${string}`;
   sourceChain: SourceChain;
 }): Promise<string> {
+  assertCrossChainEnabled();
   const { sourceTxHash, sourceChain } = params;
   const sourceDomain = getChain(sourceChain, CCTP_ENV).domain;
 
@@ -156,6 +159,7 @@ export async function estimateCrossChainFee(params: {
   sourceChain: SourceChain;
   amountUsdc: bigint;
 }) {
+  assertCrossChainEnabled();
   const client = getCctpClient();
   return client.estimateFee({
     from: params.sourceChain,
