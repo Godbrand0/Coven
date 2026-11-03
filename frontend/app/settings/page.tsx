@@ -36,7 +36,8 @@ export default function SettingsPage() {
   const [wallet, setWallet] = useState<string | null | undefined>(undefined);
   const [showSetup, setShowSetup] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteNote, setInviteNote] = useState("");
+  const inviteInputRef = useRef<HTMLInputElement>(null);
   const [invited, setInvited] = useState<number | null>(null);
 
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -68,22 +69,33 @@ export default function SettingsPage() {
 
   const inviteLink = user ? referralLink(window.location.origin, user.username) : "";
 
-  async function shareInvite() {
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({
-          title: "Join me on Coven",
-          text: `Pay me on Coven: @${user?.username}`,
-          url: inviteLink,
-        });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-      }
+  // Desktop and in-app browsers can expose a share sheet that never appears, so only phones get one.
+  const canShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteNote("Copied");
+    } catch {
+      inviteInputRef.current?.select();
+      setInviteNote("Press ⌘C / Ctrl+C to copy");
     }
-    await navigator.clipboard.writeText(inviteLink);
-    setInviteCopied(true);
-    setTimeout(() => setInviteCopied(false), 1800);
+    setTimeout(() => setInviteNote(""), 2200);
+  }
+
+  async function shareInvite() {
+    try {
+      await navigator.share({
+        title: "Join me on Coven",
+        text: `Pay me on Coven: @${user?.username}`,
+        url: inviteLink,
+      });
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === "AbortError")) await copyInvite();
+    }
   }
 
   async function copyAddress() {
@@ -222,11 +234,28 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 border-t border-line pt-3">
-              <p className="min-w-0 flex-1 break-all text-xs text-ink-soft">{inviteLink}</p>
-              <Button size="sm" onClick={shareInvite}>
-                {inviteCopied ? "Copied" : "Share"}
+              <input
+                ref={inviteInputRef}
+                readOnly
+                value={inviteLink}
+                onFocus={(e) => e.currentTarget.select()}
+                aria-label="Your invite link"
+                className="min-w-0 flex-1 rounded-lg bg-surface-2 px-2.5 py-2 text-xs text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+              <Button size="sm" onClick={copyInvite}>
+                Copy
               </Button>
+              {canShare && (
+                <Button size="sm" variant="secondary" onClick={shareInvite}>
+                  Share
+                </Button>
+              )}
             </div>
+            {inviteNote && (
+              <p role="status" className="text-xs font-semibold text-pos">
+                {inviteNote}
+              </p>
+            )}
           </Card>
 
           {showSetup && (
