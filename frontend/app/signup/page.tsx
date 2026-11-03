@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, Spinner, Alert } from "@/components/ui";
 import { GoogleIcon, CovenMark, CheckCircleIcon, ArrowLeftIcon } from "@/components/Icons";
 import { signInWithGoogle } from "@/lib/useAuth";
+import { stashRef } from "@/lib/referral";
 
 const PERKS = [
   "Your own @handle people can pay",
@@ -15,6 +16,11 @@ const PERKS = [
 export default function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // An invite link lands here as /signup?ref=<username>; keep it through the Google redirect.
+  useEffect(() => {
+    stashRef(new URLSearchParams(window.location.search).get("ref"));
+  }, []);
 
   async function handleGoogleLogin() {
     setBusy(true);

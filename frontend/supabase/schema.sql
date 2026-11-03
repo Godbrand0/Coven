@@ -14,6 +14,8 @@ create table if not exists users (
   bio text,
   total_sent numeric(20,6) default 0,
   total_received numeric(20,6) default 0,
+  referred_by uuid references users(id), -- who invited this user; set once, see /api/referrals/claim
+  constraint users_not_self_referred check (referred_by is distinct from id),
   created_at timestamptz default now()
 );
 
@@ -227,6 +229,7 @@ $$;
 -- Indexes
 create index if not exists idx_users_username on users(username);
 create index if not exists idx_users_phone on users(phone);
+create index if not exists idx_users_referred_by on users(referred_by);
 create index if not exists idx_payments_from on payments(from_user_id);
 create index if not exists idx_payments_to on payments(to_user_id);
 create index if not exists idx_payments_created on payments(created_at desc);

@@ -12,6 +12,7 @@ export interface User {
   bio: string | null;
   total_sent: number;
   total_received: number;
+  referred_by: string | null;
   created_at: string;
 }
 

@@ -29,6 +29,7 @@ Takes about 6 seconds.
 | `goal-actions.test.mjs` | GoalPool v2: contributions pause during a withdrawal, approvals carry recipient and amount, and the time-locked exit and refunds work |
 | `goal-confirms.test.mjs` | Goal creation and contribution are recorded from the chain, not the request, and cannot be replayed or claimed by someone else |
 | `splits-escrow.test.mjs` | Bill splits held in SplitEscrow: create, pay, complete, cancel, expire and refund, and the old direct-pay path is refused |
+| `referrals.test.mjs` | An invite is attributed once, only to a new account, and never to yourself or an unknown handle |
 
 Every challenge a route issues is executed on the local chain exactly as Circle would, so the tests
 prove the calls are valid, not only that the routes ran.

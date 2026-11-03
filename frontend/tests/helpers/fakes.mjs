@@ -36,7 +36,8 @@ function matches(row, searchParams) {
   return [...searchParams.entries()].every(([key, value]) => {
     if (["select", "order", "limit", "on_conflict"].includes(key)) return true;
     if (value.startsWith("eq.")) return String(row[key]) === value.slice(3);
-    if (value.startsWith("in.(")) return value.slice(4, -1).split(",").includes(String(row[key]));
+    if (value.startsWith("neq.")) return String(row[key]) !== value.slice(4);
+    if (value.startsWith("in.("))return value.slice(4, -1).split(",").includes(String(row[key]));
     return true;
   });
 }

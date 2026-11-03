@@ -9,6 +9,7 @@ import { CovenMark } from "@/components/Icons";
 import { api } from "@/lib/api-client";
 import { validateUsername } from "@/lib/format";
 import { useAuth } from "@/lib/useAuth";
+import { clearRef, pendingRef } from "@/lib/referral";
 
 const STEPS = ["Handle", "Wallet"];
 
@@ -32,6 +33,12 @@ export default function OnboardPage() {
     setError("");
     try {
       await api("/api/users/create", { json: { username, displayName } });
+      const ref = pendingRef();
+      if (ref) {
+        // Attribution is best effort and must never block onboarding.
+        await api("/api/referrals/claim", { json: { ref } }).catch(() => {});
+        clearRef();
+      }
       setStep("wallet");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not claim username");

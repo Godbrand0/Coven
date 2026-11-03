@@ -23,10 +23,12 @@ import {
   BanknoteIcon,
   PlusIcon,
   LogoutIcon,
+  UserGroupIcon,
 } from "@/components/Icons";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/lib/useAuth";
 import { NETWORK_LABEL } from "@/lib/network";
+import { referralLink } from "@/lib/referral";
 import type { BankAccount } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -34,6 +36,8 @@ export default function SettingsPage() {
   const [wallet, setWallet] = useState<string | null | undefined>(undefined);
   const [showSetup, setShowSetup] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [invited, setInvited] = useState<number | null>(null);
 
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -57,7 +61,30 @@ export default function SettingsPage() {
         setBanks(banks);
       })
       .catch(() => {});
+    api<{ count: number }>("/api/referrals")
+      .then(({ count }) => setInvited(count))
+      .catch(() => {});
   }, [user]);
+
+  const inviteLink = user ? referralLink(window.location.origin, user.username) : "";
+
+  async function shareInvite() {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Join me on Coven",
+          text: `Pay me on Coven: @${user?.username}`,
+          url: inviteLink,
+        });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard.writeText(inviteLink);
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 1800);
+  }
 
   async function copyAddress() {
     if (!wallet) return;
@@ -179,6 +206,27 @@ export default function SettingsPage() {
                 </button>
               </div>
             )}
+          </Card>
+
+          {/* Invite */}
+          <Card className="space-y-3.5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent">
+                <UserGroupIcon className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-ink">Invite friends</p>
+                <p className="text-xs text-ink-mute">
+                  {invited ? `${invited} joined through your link` : "Share your link so friends can pay you"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 border-t border-line pt-3">
+              <p className="min-w-0 flex-1 break-all text-xs text-ink-soft">{inviteLink}</p>
+              <Button size="sm" onClick={shareInvite}>
+                {inviteCopied ? "Copied" : "Share"}
+              </Button>
+            </div>
           </Card>
 
           {showSetup && (
