@@ -46,7 +46,10 @@ const GROUPS: { title: string; links: FooterLink[] }[] = [
       { label: "How it works", href: "/#how" },
       { label: "Features", href: "/#features" },
       { label: "Cash out to a bank", href: "/#cashout" },
-      { label: "Documentation", href: `${GITHUB_URL}/tree/main/docs`, external: true },
+      { label: "Documentation", href: "/docs" },
+      { label: "Testnet tracker", href: "/testnet" },
+      { label: "Coven on X", href: "https://x.com/Covenpay", external: true },
+      { label: "Telegram community", href: "https://t.me/+GVyHEXlo41M0Mzc0", external: true },
     ],
   },
   {
@@ -87,7 +90,7 @@ function shorten(address: string) {
 }
 
 // Routes that are not wrapped in AppShell (no sidebar, no bottom tab bar).
-const STANDALONE = ["/signup", "/onboard", "/auth"];
+const STANDALONE = ["/signup", "/onboard", "/auth", "/docs", "/testnet"];
 
 export default function SiteFooter() {
   const pathname = usePathname();
