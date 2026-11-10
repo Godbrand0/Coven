@@ -45,6 +45,7 @@ const GROUPS: { title: string; links: FooterLink[] }[] = [
       { label: "Features", href: "/#features" },
       { label: "Cash out to a bank", href: "/#cashout" },
       { label: "Documentation", href: "/docs" },
+      { label: "Terms and privacy", href: "/terms" },
       ...(TRACKER_ENABLED
         ? [
             { label: "Testnet whitepaper", href: "/whitepaper", external: true },
@@ -92,18 +93,17 @@ function shorten(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-// Routes that are not wrapped in AppShell (no sidebar, no bottom tab bar).
-const STANDALONE = ["/signup", "/onboard", "/auth", "/docs", "/testnet"];
+// The footer is for public pages only. Inside the app (home, send, settings, ...) it would sit under
+// the sidebar and tab bar and push the real content down, and the things it links to live in Settings.
+const PUBLIC_PAGES = ["/", "/docs", "/testnet", "/terms"];
 
 export default function SiteFooter() {
   const pathname = usePathname();
-  const inShell =
-    pathname !== "/" && !STANDALONE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (!PUBLIC_PAGES.includes(pathname)) return null;
 
   return (
-    // Inside the app, clear the fixed sidebar (desktop) and the bottom tab bar (mobile).
-    <footer className={`border-t border-line bg-surface ${inShell ? "pb-20 lg:pb-0 lg:pl-64" : ""}`}>
-      {/* Standing safety notice: shown on every page, every time */}
+    <footer className="border-t border-line bg-surface">
+      {/* Standing safety notice */}
       <div className="border-b border-warn-line bg-warn-soft">
         <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-5 py-3 lg:px-8">
           <ShieldIcon className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
