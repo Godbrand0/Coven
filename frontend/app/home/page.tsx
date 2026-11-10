@@ -20,7 +20,6 @@ import {
   CashoutIcon,
   EyeIcon,
   EyeOffIcon,
-  BoltIcon,
   ChevronRightIcon,
 } from "@/components/Icons";
 import { api } from "@/lib/api-client";
@@ -191,10 +190,6 @@ export default function HomePage() {
                   ))}
                 </select>
               </label>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/85">
-                <BoltIcon className="h-3.5 w-3.5" />
-                Settles on Arc in &lt;500ms
-              </span>
               {NETWORK === "testnet" && (
                 <a
                   href={FAUCET_URL}
