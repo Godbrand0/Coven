@@ -165,6 +165,7 @@ export type ActivityType =
   | "payment_sent"
   | "payment_received"
   | "request_received"
+  | "request_sent"
   | "request_paid"
   | "request_rejected"
   | "request_declined"

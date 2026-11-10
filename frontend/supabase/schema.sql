@@ -203,7 +203,7 @@ create table if not exists activity (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) not null,
   type text not null
-    check (type in ('payment_sent','payment_received','request_received',
+    check (type in ('payment_sent','payment_received','request_received','request_sent',
                     'request_paid','request_rejected','request_declined','split_created',
                     'split_paid','split_complete','offramp_completed','offramp_failed',
                     'circle_joined','goal_created','goal_target_reached',

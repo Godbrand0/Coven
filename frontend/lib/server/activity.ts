@@ -9,6 +9,8 @@ export async function recordActivity(items: {
   actor_id?: string | null;
   amount_usdc?: number | null;
   note?: string | null;
+  /** The user's own action: no need to light up the bell. */
+  read?: boolean;
 }[]) {
   if (items.length === 0) return;
   const admin = getSupabaseAdmin();

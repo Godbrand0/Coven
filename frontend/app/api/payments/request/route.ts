@@ -50,6 +50,16 @@ export async function POST(req: Request) {
       amount_usdc: amount,
       note: note ?? null,
     },
+    {
+      // The requester's own record: "You requested $5 from @payer". Already read, it is their action.
+      user_id: requester.id,
+      type: "request_sent",
+      reference_id: request.id,
+      actor_id: payer.id,
+      amount_usdc: amount,
+      note: note ?? null,
+      read: true,
+    },
   ]);
 
   return NextResponse.json({ request });

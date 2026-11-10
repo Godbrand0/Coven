@@ -20,6 +20,7 @@ export const ACTIVITY_LABELS: Record<ActivityItem["type"], (a: ActivityItem) => 
   payment_sent: (a) => `You sent @${a.actor ? a.actor.username : "someone"}`,
   payment_received: (a) => (a.actor ? `@${a.actor.username} sent you` : "External deposit"),
   request_received: (a) => `@${a.actor?.username ?? "someone"} is requesting`,
+  request_sent: (a) => `You requested from @${a.actor?.username ?? "someone"}`,
   request_paid: (a) => `@${a.actor?.username ?? "someone"} paid your request`,
   request_rejected: (a) => `@${a.actor?.username ?? "someone"} declined your request`,
   request_declined: (a) => `You declined @${a.actor?.username ?? "their"}'s request`,
@@ -46,6 +47,7 @@ const OUTGOING = new Set<ActivityItem["type"]>([
 ]);
 
 const NEUTRAL = new Set<ActivityItem["type"]>([
+  "request_sent",
   "request_rejected",
   "request_declined",
   "goal_created",
@@ -58,6 +60,7 @@ const ACTIVITY_ICONS: Partial<Record<ActivityItem["type"], ReactNode>> = {
   payment_sent: <SendIcon className="h-4 w-4" />,
   payment_received: <ReceiveIcon className="h-4 w-4" />,
   request_received: <RequestIcon className="h-4 w-4" />,
+  request_sent: <RequestIcon className="h-4 w-4" />,
   offramp_completed: <CashoutIcon className="h-4 w-4" />,
   offramp_failed: <AlertCircleIcon className="h-4 w-4" />,
   split_complete: <CheckCircleIcon className="h-4 w-4" />,
@@ -76,6 +79,7 @@ const ICON_TONES: Partial<Record<ActivityItem["type"], string>> = {
   goal_target_reached: "bg-pos-soft text-pos",
   offramp_failed: "bg-neg-soft text-neg",
   request_received: "bg-accent-soft text-accent",
+  request_sent: "bg-accent-soft text-accent",
   circle_joined: "bg-accent-soft text-accent",
   goal_withdrawal_requested: "bg-warn-soft text-warn",
 };

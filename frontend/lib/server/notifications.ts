@@ -26,6 +26,10 @@ export function toNotification(a: ActivityRow, counterpartyUsername?: string | n
       title: "Payment requested",
       body: `@${who ?? "Someone"} is requesting ${amount ?? "a payment"}${a.note ? ` - “${a.note}”` : ""}`,
     },
+    request_sent: {
+      title: "Request sent",
+      body: `You requested ${amount ?? "a payment"} from @${who ?? "someone"}${a.note ? ` - “${a.note}”` : ""}`,
+    },
     request_paid: {
       title: "Request paid",
       body: `@${who ?? "Someone"} paid your request${amount ? ` (${amount})` : ""}`,
