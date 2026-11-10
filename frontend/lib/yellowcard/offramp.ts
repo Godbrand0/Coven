@@ -3,6 +3,8 @@
  * Server-side only.
  */
 
+import { getMarketRate } from "@/lib/server/fx";
+
 const YELLOW_CARD_API =
   process.env.YELLOW_CARD_SANDBOX === "false"
     ? "https://api.yellowcard.io/v1"
@@ -23,18 +25,14 @@ function headers() {
   };
 }
 
-/** Fallback rates used when the Yellow Card API is unreachable (demo mode). */
-const FALLBACK_RATES: Record<string, number> = {
-  NGN: 1560,
-  GHS: 15.2,
-  KES: 129,
-  ZAR: 18.1,
-};
-
-/** Exchange rate for USDC → local currency. */
+/**
+ * Exchange rate for USDC → local currency: Yellow Card's own rate when it answers with a usable
+ * number close to the market, otherwise the market rate (see lib/server/fx.ts).
+ */
 export async function getExchangeRate(
   currency: string
 ): Promise<{ rate: number; fee: number }> {
+  const market = await getMarketRate(currency);
   try {
     const res = await fetch(`${YELLOW_CARD_API}/rates?currency=${currency}`, {
       headers: headers(),
@@ -42,10 +40,15 @@ export async function getExchangeRate(
     });
     if (!res.ok) throw new Error(`rates ${res.status}`);
     const data = await res.json();
-    return { rate: data.rate, fee: data.fee ?? 0 };
+    const rate = Number(data.rate);
+    // Ignore a missing, zero or wildly different number (e.g. a sandbox placeholder).
+    if (Number.isFinite(rate) && rate > 0 && Math.abs(rate / market.rate - 1) < 0.25) {
+      return { rate, fee: Number(data.fee) || 0 };
+    }
   } catch {
-    return { rate: FALLBACK_RATES[currency] ?? 1, fee: 0 };
+    /* fall through to the market rate */
   }
+  return { rate: market.rate, fee: 0 };
 }
 
 /** Initiate a USDC → local currency bank payout. */
