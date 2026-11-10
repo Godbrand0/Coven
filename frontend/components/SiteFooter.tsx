@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NETWORK, NETWORK_LABEL } from "@/lib/network";
+import { TRACKER_ENABLED } from "@/lib/testnet";
 import { CovenMark, ShieldIcon } from "./Icons";
 
 // One footer for every page, rendered once from app/layout.tsx. It carries what every visitor should
@@ -47,8 +48,12 @@ const GROUPS: { title: string; links: FooterLink[] }[] = [
       { label: "Features", href: "/#features" },
       { label: "Cash out to a bank", href: "/#cashout" },
       { label: "Documentation", href: "/docs" },
-      { label: "Testnet whitepaper", href: "/whitepaper", external: true },
-      { label: "Testnet tracker", href: "/testnet" },
+      ...(TRACKER_ENABLED
+        ? [
+            { label: "Testnet whitepaper", href: "/whitepaper", external: true },
+            { label: "Testnet tracker", href: "/testnet" },
+          ]
+        : []),
       { label: "Coven on X", href: "https://x.com/Covenpay", external: true },
       { label: "Telegram community", href: "https://t.me/+GVyHEXlo41M0Mzc0", external: true },
     ],

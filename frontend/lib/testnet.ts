@@ -1,3 +1,11 @@
+import { NETWORK } from "@/lib/network";
+
+/**
+ * The tracker lists every user's username, wallet address and payments, which is fine for testers
+ * and not for real users. It exists only on a testnet deployment; on mainnet its page and API 404.
+ */
+export const TRACKER_ENABLED = NETWORK === "testnet";
+
 /** Testnet tracker labels and eligibility stages, shared by the server and the tracker page. */
 
 export type TxKind =

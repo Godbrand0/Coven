@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -7,11 +8,27 @@ import { ARC_CHAIN_ID, NETWORK, validateNetworkEnv } from "@/lib/network";
  * GET /api/health - is every system a tester's payment depends on up right now?
  *
  * Answers 200 when every critical check passes and 503 when any fails, so an uptime monitor can
- * watch it directly. Reports pass/fail and a short reason only: no keys, no env values.
+ * watch it directly. Anyone gets `{ ok }`; the per-check detail (relayer address and balance, missing
+ * settings, database errors) is returned only to a caller sending `Authorization: Bearer <HEALTH_TOKEN>`,
+ * and never when HEALTH_TOKEN is unset. Results are shared for a few seconds so it cannot be used to
+ * hammer Circle, the RPC and the database.
  */
 type Check = { name: string; ok: boolean; critical: boolean; detail: string; ms: number };
 
 const TIMEOUT_MS = 8_000;
+const CACHE_MS = 10_000;
+
+let cached: { at: number; checks: Check[] } | null = null;
+let running: Promise<Check[]> | null = null;
+
+function detailAllowed(req: Request): boolean {
+  const token = process.env.HEALTH_TOKEN;
+  const header = req.headers.get("authorization") ?? "";
+  if (!token || !header.startsWith("Bearer ")) return false;
+  const given = Buffer.from(header.slice("Bearer ".length));
+  const expected = Buffer.from(token);
+  return given.length === expected.length && timingSafeEqual(given, expected);
+}
 
 async function run(name: string, critical: boolean, fn: () => Promise<string>): Promise<Check> {
   const start = Date.now();
@@ -36,12 +53,11 @@ const REQUIRED_ENV = [
   "NEXT_PUBLIC_SPLIT_ESCROW_CONTRACT",
   "NEXT_PUBLIC_GOAL_POOL_CONTRACT",
   "CIRCLE_API_KEY",
-  "CIRCLE_ENTITY_SECRET",
   "NEXT_PUBLIC_CIRCLE_APP_ID",
   "NEXT_PUBLIC_APP_URL",
 ];
 
-export async function GET() {
+async function runChecks(): Promise<Check[]> {
   const provider = process.env.ARC_RPC_URL ? new ethers.JsonRpcProvider(process.env.ARC_RPC_URL, undefined, { staticNetwork: true }) : null;
 
   const hasCode = (envName: string) => async () => {
@@ -53,7 +69,7 @@ export async function GET() {
     return `deployed at ${address}`;
   };
 
-  const checks = await Promise.all([
+  return Promise.all([
     run("Configuration", true, async () => {
       const missing = REQUIRED_ENV.filter((n) => !process.env[n]);
       const problems = [...missing.map((n) => `${n} is not set`), ...validateNetworkEnv(NETWORK, process.env)];
@@ -104,9 +120,20 @@ export async function GET() {
     }),
   ]);
 
+}
+
+export async function GET(req: Request) {
+  if (!cached || Date.now() - cached.at > CACHE_MS) {
+    running ??= runChecks().finally(() => {
+      running = null;
+    });
+    cached = { at: Date.now(), checks: await running };
+  }
+  const { checks, at } = cached;
   const ok = checks.every((c) => c.ok || !c.critical);
-  return NextResponse.json(
-    { ok, network: NETWORK, checkedAt: new Date().toISOString(), checks },
-    { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } }
-  );
+  const headers = { "cache-control": "no-store" };
+  const body = detailAllowed(req)
+    ? { ok, network: NETWORK, checkedAt: new Date(at).toISOString(), checks }
+    : { ok };
+  return NextResponse.json(body, { status: ok ? 200 : 503, headers });
 }

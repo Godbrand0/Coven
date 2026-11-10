@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CovenMark } from "@/components/Icons";
 import { NETWORK, NETWORK_LABEL, ARC_CHAIN_ID } from "@/lib/network";
-import { STAGES, TX_KINDS, type TxKind } from "@/lib/testnet";
+import { STAGES, TRACKER_ENABLED, TX_KINDS, type TxKind } from "@/lib/testnet";
 import DocsNav, { type NavGroup } from "./DocsNav";
 
 export const metadata: Metadata = {
@@ -40,7 +40,7 @@ const NAV: NavGroup[] = [
       { id: "testnet", label: "Testnet" },
       { id: "getting-started", label: "Getting started" },
       { id: "eligibility", label: "Eligibility" },
-      { id: "tracker", label: "Testnet tracker" },
+      ...(TRACKER_ENABLED ? [{ id: "tracker", label: "Testnet tracker" }] : []),
     ],
   },
   {
@@ -223,9 +223,11 @@ export default function DocsPage() {
             <a href={WHITEPAPER} target="_blank" rel="noopener noreferrer" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">
               Whitepaper
             </a>
-            <Link href="/testnet" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">
-              Tracker
-            </Link>
+            {TRACKER_ENABLED && (
+              <Link href="/testnet" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">
+                Tracker
+              </Link>
+            )}
             <Link href="/signup" className="rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-surface hover:bg-ink-2">
               Open the app
             </Link>
@@ -307,7 +309,9 @@ export default function DocsPage() {
               rows={[
                 ["App", <Ext key="app" href={APP_URL}>{APP_URL.replace(/^https?:\/\//, "")}</Ext>],
                 ["Testnet whitepaper", <Ext key="wp" href={WHITEPAPER}>Download the PDF</Ext>],
-                ["Testnet tracker", <Link key="t" href="/testnet" className="font-semibold text-accent hover:underline">{APP_URL.replace(/^https?:\/\//, "")}/testnet</Link>],
+                ...(TRACKER_ENABLED
+                  ? [["Testnet tracker", <Link key="t" href="/testnet" className="font-semibold text-accent hover:underline">{APP_URL.replace(/^https?:\/\//, "")}/testnet</Link>] as [string, ReactNode]]
+                  : []),
                 ["X", <Ext key="x" href={X_URL}>@Covenpay</Ext>],
                 ["Telegram", <Ext key="tg" href={TELEGRAM_URL}>Coven testnet group</Ext>],
                 ["USDC faucet", <Ext key="f" href={FAUCET}>faucet.circle.com</Ext>],
@@ -387,6 +391,7 @@ export default function DocsPage() {
             />
           </Section>
 
+          {TRACKER_ENABLED && (
           <Section id="tracker" title="Testnet tracker" lead="A public page that shows every verified testnet transaction and every tester's progress. It refreshes every 30 seconds.">
             <p>
               Open <Link href="/testnet" className="font-semibold text-accent hover:underline">/testnet</Link> to see totals, how
@@ -404,6 +409,7 @@ export default function DocsPage() {
               payment never appears.
             </p>
           </Section>
+          )}
 
           {/* ===================================================== USING COVEN */}
 
@@ -767,8 +773,9 @@ pnpm dev                     # http://localhost:3000`}</CodeBlock>
             <p>
               Checks the configuration, the database and its migrations, the Arc RPC, the deployed contracts, the Circle API key,
               the relayer&apos;s gas and whether cash out is configured. Answers <Code>200</Code> when every critical check passes and{" "}
-              <Code>503</Code> when one fails, so an uptime monitor can watch it directly. It reports pass or fail and a short
-              reason, never a key or setting value.
+              <Code>503</Code> when one fails, so an uptime monitor can watch it directly. Anyone sees only{" "}
+              <Code>{'{ "ok": true }'}</Code>; the per-check detail needs the operator token (<Code>HEALTH_TOKEN</Code>, sent as a bearer
+              token).
             </p>
             <H3>GET /api/testnet</H3>
             <p>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TRACKER_ENABLED } from "@/lib/testnet";
 import { buildTracker, loadTrackerInput, type TrackerData } from "@/lib/server/testnet-tracker";
 
 /**
@@ -14,6 +15,7 @@ let cached: { at: number; data: TrackerData } | null = null;
 let building: Promise<TrackerData> | null = null;
 
 export async function GET() {
+  if (!TRACKER_ENABLED) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     if (!cached || Date.now() - cached.at > TTL_MS) {
       building ??= loadTrackerInput()
