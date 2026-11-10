@@ -135,6 +135,26 @@ test("GET /api/testnet is closed to anyone not on the team", async () => {
   assert.equal((await route.GET(asUser(null, "anything"))).status, 403); // no code set: nothing matches
 });
 
+test("a team email that was never confirmed does not open the tracker", async () => {
+  Object.assign(db, fixture());
+  db.users[0].email = "alice@example.com";
+  db.users[0].email_unconfirmed = true; // signed up with an address they have not proved they own
+  process.env.TESTNET_TEAM_EMAILS = "alice@example.com";
+  process.env.TESTNET_ACCESS_CODE = "";
+  assert.equal((await route.GET(asUser("alice"))).status, 401);
+  db.users[0].email_unconfirmed = false;
+  assert.equal((await route.GET(asUser("alice"))).status, 200);
+});
+
+test("an access code shorter than 16 characters is ignored, even when it matches", async () => {
+  Object.assign(db, fixture());
+  process.env.TESTNET_TEAM_EMAILS = "";
+  process.env.TESTNET_ACCESS_CODE = "CPTTCODE"; // 8 characters: guessable, and there is no attempt limit
+  assert.equal((await route.GET(asUser(null, "CPTTCODE"))).status, 403);
+  process.env.TESTNET_ACCESS_CODE = "a-long-random-code-9";
+  assert.equal((await route.GET(asUser(null, "a-long-random-code-9"))).status, 200);
+});
+
 test("the access code opens the tracker without a sign-in", async () => {
   Object.assign(db, fixture());
   process.env.TESTNET_TEAM_EMAILS = "";
