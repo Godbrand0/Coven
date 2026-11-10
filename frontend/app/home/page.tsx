@@ -49,7 +49,6 @@ export default function HomePage() {
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [hidden, setHidden] = useState(false);
-  const [faucetNote, setFaucetNote] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -82,17 +81,6 @@ export default function HomePage() {
       stale = true;
     };
   }, [user, ready, currency.code]);
-
-  // Testnet: copy the wallet address as the faucet opens, so it can be pasted straight in.
-  async function copyForFaucet() {
-    if (!user?.wallet_address) return;
-    try {
-      await navigator.clipboard.writeText(user.wallet_address);
-      setFaucetNote("Address copied. Paste it on the faucet and choose Arc Testnet.");
-    } catch {
-      setFaucetNote("Copy your address from Settings, then paste it on the faucet.");
-    }
-  }
 
   async function payRequest(id: string) {
     setPendingId(id);
@@ -207,30 +195,17 @@ export default function HomePage() {
                 <BoltIcon className="h-3.5 w-3.5" />
                 Settles on Arc in &lt;500ms
               </span>
-            </div>
-
-            {/* Testnet only: where to get free test USDC */}
-            {NETWORK === "testnet" && (
-              <div className="relative mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/15 bg-white/10 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold">
-                    {balance && Number(balance.usdc) === 0 ? "Your balance is empty" : "Need test USDC?"}
-                  </p>
-                  <p className="text-xs text-white/70">
-                    {faucetNote || "Get free test USDC from Circle. We copy your address so you can paste it in."}
-                  </p>
-                </div>
+              {NETWORK === "testnet" && (
                 <a
                   href={FAUCET_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={copyForFaucet}
-                  className="inline-flex shrink-0 items-center rounded-lg bg-white px-3.5 py-2 text-sm font-bold text-ink transition-colors duration-200 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                  className="inline-flex items-center rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-ink transition-colors duration-200 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                 >
                   Get test USDC <span aria-hidden="true" className="ml-1">↗</span>
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </section>
 
           {/* Quick actions */}
