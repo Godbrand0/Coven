@@ -15,7 +15,7 @@ import {
   UserGroupIcon,
 } from "@/components/Icons";
 import { useAuth } from "@/lib/useAuth";
-import { NETWORK_LABEL } from "@/lib/network";
+import { NETWORK, NETWORK_LABEL } from "@/lib/network";
 
 /** The Settings home: a short list of sections, each opening its own page. */
 export default function SettingsPage() {
@@ -36,7 +36,7 @@ export default function SettingsPage() {
         </Link>
 
         <SettingsGroup title="Account">
-          <SettingsRow href="/settings/wallet" icon={<LockIcon className="h-4 w-4" />} label="Wallet and PIN" hint="Your address and PIN" />
+          <SettingsRow href="/settings/wallet" icon={<LockIcon className="h-4 w-4" />} label="Wallet and PIN" hint="Your address, change or reset your PIN" />
           <SettingsRow href="/settings/invite" icon={<UserGroupIcon className="h-4 w-4" />} label="Invite friends" hint="Share your link so friends can pay you" />
         </SettingsGroup>
 
@@ -45,7 +45,12 @@ export default function SettingsPage() {
         </SettingsGroup>
 
         <SettingsGroup title="App">
-          <SettingsRow href="/settings/network" icon={<GlobeIcon className="h-4 w-4" />} label="Network" hint={NETWORK_LABEL} />
+          <SettingsRow
+            href="/settings/network"
+            icon={<GlobeIcon className="h-4 w-4" />}
+            label={NETWORK === "testnet" ? "Testnet and free USDC" : "Network"}
+            hint={NETWORK === "testnet" ? `${NETWORK_LABEL} · get free test USDC from Circle` : NETWORK_LABEL}
+          />
         </SettingsGroup>
 
         <SettingsGroup title="Support and legal">

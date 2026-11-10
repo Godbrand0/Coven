@@ -89,6 +89,22 @@ export async function initializeUserWallet(
   }
 }
 
+/**
+ * Start a PIN change ("change": the user knows their current PIN) or a PIN reset ("restore": they
+ * forgot it and answer their security questions). Returns the challenge the client runs in Circle's
+ * widget; the PINs are typed there, so they never reach Coven.
+ */
+export async function createPinChallenge(
+  userToken: string,
+  kind: "change" | "restore"
+): Promise<{ challengeId: string }> {
+  return circleFetch<{ challengeId: string }>(kind === "change" ? `/user/pin` : `/user/pin/restore`, {
+    method: kind === "change" ? "PUT" : "POST",
+    headers: { "X-User-Token": userToken },
+    body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }),
+  });
+}
+
 /** List a user's wallets (requires their session token). */
 export async function listUserWallets(
   userToken: string

@@ -49,7 +49,7 @@ function matches(row, searchParams) {
  *           transfers   USDC transfers Circle can list (matched by destinationAddress)
  *           execTxs     contract executions Circle can list
  *           inbound     inbound transfers for the deposit sync
- *           challenges / transferChallenges   challenges the routes asked Circle to create
+ *           challenges / transferChallenges / pinChallenges   challenges the routes asked Circle to create
  *           yellowCard  payout requests made to Yellow Card
  *           upserts     payments upserts (to check on_conflict / ignore-duplicates)
  *           hidePaymentSelect  make the "already recorded?" pre-check miss, so only the unique
@@ -80,6 +80,7 @@ export function installFakes() {
       inbound: [],
       challenges: [],
       transferChallenges: [],
+      pinChallenges: [],
       yellowCard: [],
       upserts: [],
       errors: [],
@@ -152,6 +153,10 @@ export function installFakes() {
 
     // ---- Circle
     if (url === "https://api.circle.com/v1/w3s/users/token") return json({ data: { userToken: "t", encryptionKey: "e" } });
+    if (url === "https://api.circle.com/v1/w3s/user/pin" || url === "https://api.circle.com/v1/w3s/user/pin/restore") {
+      world.pinChallenges.push({ url, method, userToken: headers.get("x-user-token"), body: JSON.parse(init.body) });
+      return json({ data: { challengeId: "pin-" + world.pinChallenges.length } }, 201);
+    }
     if (url === "https://api.circle.com/v1/w3s/user/transactions/contractExecution") {
       world.challenges.push(JSON.parse(init.body));
       return json({ data: { challengeId: "challenge-" + world.challenges.length } });

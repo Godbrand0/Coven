@@ -36,17 +36,41 @@ export default function NetworkSettingsPage() {
   }
 
   return (
-    <AppShell title="Network" subtitle={NETWORK_LABEL} back>
+    <AppShell title={NETWORK === "testnet" ? "Testnet and free USDC" : "Network"} subtitle={NETWORK_LABEL} back>
       <div className="mx-auto max-w-xl space-y-5">
-        <Card className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-soft">
-            <CreditCardIcon className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-ink">{NETWORK_LABEL}</p>
-            <p className="text-xs text-ink-mute">Sub-500ms settlement · zero gas on P2P</p>
-          </div>
-        </Card>
+        {/* Testnet only: where to get free test USDC */}
+        {NETWORK === "testnet" && wallet && (
+          <Card className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent">
+                <BanknoteIcon className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-ink">Get free test USDC</p>
+                <p className="text-xs text-ink-mute">Free, and it only takes a minute.</p>
+              </div>
+            </div>
+            <ol className="list-decimal space-y-1 pl-5 text-xs leading-relaxed text-ink-soft">
+              <li>Tap <strong className="text-ink">Copy my address</strong>.</li>
+              <li>Open the Circle faucet.</li>
+              <li>Choose <strong className="text-ink">Arc Testnet</strong> and <strong className="text-ink">USDC</strong>, paste your address and send the request.</li>
+              <li>Come back here. The USDC shows up on Home within a minute or two.</li>
+            </ol>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="secondary" onClick={copyAddress}>
+                {copied ? "Address copied" : "Copy my address"}
+              </Button>
+              <a
+                href={FAUCET_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-surface transition-colors duration-200 hover:bg-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Open Circle faucet <span aria-hidden="true" className="ml-1">↗</span>
+              </a>
+            </div>
+          </Card>
+        )}
 
         {/* Testnet only: how far this tester is through the eligibility stages */}
         {NETWORK === "testnet" && progress !== null && (
@@ -95,35 +119,15 @@ export default function NetworkSettingsPage() {
           </Card>
         )}
 
-        {/* Testnet only: where to get free test USDC */}
-        {NETWORK === "testnet" && wallet && (
-          <Card className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <BanknoteIcon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-ink">Get free test USDC</p>
-                <p className="text-xs text-ink-mute">
-                  Copy your address, then on Circle&apos;s faucet pick Arc Testnet and USDC and paste it in.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={copyAddress}>
-                {copied ? "Address copied" : "Copy my address"}
-              </Button>
-              <a
-                href={FAUCET_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-surface transition-colors duration-200 hover:bg-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                Open Circle faucet <span aria-hidden="true" className="ml-1">↗</span>
-              </a>
-            </div>
-          </Card>
-        )}
+        <Card className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-soft">
+            <CreditCardIcon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-ink">{NETWORK_LABEL}</p>
+            <p className="text-xs text-ink-mute">Sub-500ms settlement · zero gas on P2P</p>
+          </div>
+        </Card>
       </div>
     </AppShell>
   );

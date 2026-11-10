@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import WalletSetup from "@/components/WalletSetup";
-import { Button, Card, Skeleton } from "@/components/ui";
+import { Alert, Button, Card, Skeleton } from "@/components/ui";
 import { CheckCircleIcon, CopyIcon, LockIcon } from "@/components/Icons";
 import { api } from "@/lib/api-client";
+import { changePin } from "@/lib/circle/pin";
 import { useAuth } from "@/lib/useAuth";
 import { explorerAddressUrl } from "@/lib/explorer";
 
@@ -14,6 +15,9 @@ export default function WalletSettingsPage() {
   const [wallet, setWallet] = useState<string | null | undefined>(undefined);
   const [showSetup, setShowSetup] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pinBusy, setPinBusy] = useState<"change" | "restore" | null>(null);
+  const [pinNote, setPinNote] = useState("");
+  const [pinError, setPinError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +31,21 @@ export default function WalletSettingsPage() {
     await navigator.clipboard.writeText(wallet);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  }
+
+  // Circle's widget asks for the PINs (and the security answers for a reset); Coven never sees them.
+  async function runPin(kind: "change" | "restore") {
+    setPinBusy(kind);
+    setPinNote("");
+    setPinError("");
+    try {
+      await changePin(kind);
+      setPinNote(kind === "change" ? "Your PIN was changed." : "Your PIN was reset.");
+    } catch (e) {
+      setPinError(e instanceof Error ? e.message : "Could not change your PIN");
+    } finally {
+      setPinBusy(null);
+    }
   }
 
   return (
@@ -77,6 +96,41 @@ export default function WalletSettingsPage() {
             </div>
           )}
         </Card>
+
+        {wallet && (
+          <Card className="space-y-3">
+            <div>
+              <p className="text-sm font-bold text-ink">Change your PIN</p>
+              <p className="text-xs text-ink-mute">
+                A secure window from Circle opens and asks for your PIN. Coven never sees it.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => runPin("change")} loading={pinBusy === "change"} disabled={pinBusy !== null}>
+                Change PIN
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => runPin("restore")}
+                loading={pinBusy === "restore"}
+                disabled={pinBusy !== null}
+              >
+                I forgot my PIN
+              </Button>
+            </div>
+            <p className="text-xs leading-relaxed text-ink-mute">
+              <strong className="text-ink-soft">Forgot it?</strong> Choose &ldquo;I forgot my PIN&rdquo; and answer your
+              security questions to set a new one.
+            </p>
+            {pinNote && (
+              <p role="status" className="text-xs font-semibold text-pos">
+                {pinNote}
+              </p>
+            )}
+            {pinError && <Alert>{pinError}</Alert>}
+          </Card>
+        )}
 
         <p className="px-1 text-xs leading-relaxed text-ink-mute">
           Coven never asks for your PIN. Anyone who does is not Coven.
