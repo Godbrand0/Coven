@@ -295,9 +295,25 @@ export default function HistoryPage() {
             {rows === null ? "Loading…" : `${total} ${total === 1 ? "transaction" : "transactions"}`}
             {totals && totals.count > 0 && ` · ${totals.count} settled`}
           </p>
-          <Button size="sm" variant="secondary" onClick={download} loading={downloading} disabled={customInvalid}>
-            Download CSV
-          </Button>
+          <div className="flex gap-2">
+            {customInvalid ? (
+              <Button size="sm" variant="secondary" disabled>
+                Download PDF
+              </Button>
+            ) : (
+              <a
+                href={`/history/statement?${rangeQuery}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-9 items-center rounded-lg border border-line bg-surface px-3.5 text-sm font-bold text-ink shadow-e1 transition-colors duration-200 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Download PDF
+              </a>
+            )}
+            <Button size="sm" variant="secondary" onClick={download} loading={downloading} disabled={customInvalid}>
+              Download CSV
+            </Button>
+          </div>
         </div>
 
         {error && <Alert>{error}</Alert>}
@@ -350,7 +366,7 @@ export default function HistoryPage() {
         )}
 
         <p className="px-1 text-xs leading-relaxed text-ink-mute">
-          The CSV covers the dates you picked, with times in UTC. Pending and failed payments are listed but not counted in the totals.
+          The CSV and PDF cover the dates you picked. CSV times are in UTC; the PDF uses your time zone. For a PDF, choose “Save as PDF” in the print window. Pending and failed payments are listed but not counted in the totals.
         </p>
       </div>
     </AppShell>

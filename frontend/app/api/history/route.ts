@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "direction must be all, in or out" }, { status: 400 });
   }
   const offset = Math.max(0, Math.floor(Number(params.get("offset") ?? 0)) || 0);
-  const limit = Math.min(100, Math.max(1, Math.floor(Number(params.get("limit") ?? PAGE_SIZE)) || PAGE_SIZE));
+  const limit = Math.min(1000, Math.max(1, Math.floor(Number(params.get("limit") ?? PAGE_SIZE)) || PAGE_SIZE));
 
   // Pick up deposits made from outside Coven (the faucet, another wallet) before reading.
   if (offset === 0 && user.circle_wallet_id) {
