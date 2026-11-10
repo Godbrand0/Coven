@@ -15,6 +15,7 @@ Coven is a social USDC payments app on Arc. Testers send money to an @username, 
 | X | https://x.com/Covenpay |
 | Telegram group | https://t.me/+GVyHEXlo41M0Mzc0 |
 | Docs | https://covenpay.com/docs |
+| Whitepaper | https://covenpay.com/whitepaper |
 | USDC faucet | https://faucet.circle.com (choose **Arc Testnet**) |
 | Block explorer | https://explorer.testnet.arc.io |
 | Source code | https://github.com/MarvyNwaokobia/Coven |

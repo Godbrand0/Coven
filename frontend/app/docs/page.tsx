@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 const IS_TESTNET = NETWORK === "testnet";
 const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER_URL ?? (IS_TESTNET ? "https://explorer.testnet.arc.io" : undefined);
 const FAUCET = "https://faucet.circle.com";
+const WHITEPAPER = "/whitepaper";
 const GITHUB = "https://github.com/MarvyNwaokobia/Coven";
 // Official links. Env can override them (e.g. a staging deployment); otherwise these are used.
 const SITE_URL = "https://covenpay.com";
@@ -219,6 +220,9 @@ export default function DocsPage() {
             <span className="rounded-md bg-surface-3 px-2 py-0.5 text-xs font-bold text-ink-soft">Docs</span>
           </div>
           <div className="flex items-center gap-2">
+            <a href={WHITEPAPER} target="_blank" rel="noopener noreferrer" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">
+              Whitepaper
+            </a>
             <Link href="/testnet" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">
               Tracker
             </Link>
@@ -294,12 +298,15 @@ export default function DocsPage() {
             <p>
               The testnet is where we find what breaks before real money is involved. Use every feature, try odd amounts, invite
               friends, and report anything that looks wrong. Completing the core flows makes you eligible (see{" "}
-              <a href="#eligibility" className="font-semibold text-accent hover:underline">Eligibility</a>).
+              <a href="#eligibility" className="font-semibold text-accent hover:underline">Eligibility</a>). The{" "}
+              <Ext href={WHITEPAPER}>testnet whitepaper</Ext> sets out the testnet&apos;s objectives, eligibility and
+              fair-play policy in full.
             </p>
             <Table
               head={["Where", "Link"]}
               rows={[
                 ["App", <Ext key="app" href={APP_URL}>{APP_URL.replace(/^https?:\/\//, "")}</Ext>],
+                ["Testnet whitepaper", <Ext key="wp" href={WHITEPAPER}>Download the PDF</Ext>],
                 ["Testnet tracker", <Link key="t" href="/testnet" className="font-semibold text-accent hover:underline">{APP_URL.replace(/^https?:\/\//, "")}/testnet</Link>],
                 ["X", <Ext key="x" href={X_URL}>@Covenpay</Ext>],
                 ["Telegram", <Ext key="tg" href={TELEGRAM_URL}>Coven testnet group</Ext>],

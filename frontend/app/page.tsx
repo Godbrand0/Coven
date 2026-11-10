@@ -98,6 +98,8 @@ export default function Landing() {
               { href: "#how", label: "How it works" },
               { href: "#features", label: "Features" },
               { href: "#cashout", label: "Cash out" },
+              { href: "/docs", label: "Docs" },
+              { href: "/whitepaper", label: "Whitepaper" },
             ].map((l) => (
               <a
                 key={l.href}

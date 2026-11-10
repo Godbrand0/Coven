@@ -132,10 +132,14 @@ export default function TestnetTrackerPage() {
             <CovenMark className="h-7 w-7 text-accent" />
             <span className="text-lg font-extrabold tracking-tight text-ink">Coven</span>
           </Link>
+          <div className="flex items-center gap-1 sm:gap-2">
+          <Link href="/docs" className="rounded-lg px-2.5 py-2 text-sm font-semibold text-ink-soft hover:text-ink">Docs</Link>
+          <a href="/whitepaper" target="_blank" rel="noopener noreferrer" className="hidden rounded-lg px-2.5 py-2 text-sm font-semibold text-ink-soft hover:text-ink sm:inline-block">Whitepaper</a>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-line bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
             <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
             {NETWORK_LABEL}
           </span>
+          </div>
         </div>
       </header>
 
