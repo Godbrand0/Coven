@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CovenMark } from "@/components/Icons";
 import { NETWORK, NETWORK_LABEL, ARC_CHAIN_ID } from "@/lib/network";
-import { STAGES, TRACKER_ENABLED, TX_KINDS, type TxKind } from "@/lib/testnet";
+import { FAUCET_URL as FAUCET, STAGES, TRACKER_ENABLED, TX_KINDS, type TxKind } from "@/lib/testnet";
 import DocsNav, { type NavGroup } from "./DocsNav";
 
 export const metadata: Metadata = {
@@ -18,7 +18,6 @@ export const metadata: Metadata = {
 
 const IS_TESTNET = NETWORK === "testnet";
 const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER_URL ?? (IS_TESTNET ? "https://explorer.testnet.arc.io" : undefined);
-const FAUCET = "https://faucet.circle.com";
 const WHITEPAPER = "/whitepaper";
 const GITHUB = "https://github.com/MarvyNwaokobia/Coven";
 // Official links. Env can override them (e.g. a staging deployment); otherwise these are used.
