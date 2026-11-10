@@ -2,18 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NETWORK, NETWORK_LABEL } from "@/lib/network";
+import { NETWORK_LABEL } from "@/lib/network";
+import { EXPLORER_URL } from "@/lib/explorer";
+import { GITHUB_URL } from "@/lib/community";
 import { TRACKER_ENABLED } from "@/lib/testnet";
 import { CovenMark, ShieldIcon } from "./Icons";
 
 // One footer for every page, rendered once from app/layout.tsx. It carries what every visitor should
 // see each time: where things are, where the contracts live, and a standing safety notice.
 
-const GITHUB_URL = "https://github.com/MarvyNwaokobia/Coven";
-// Mainnet has no default: set NEXT_PUBLIC_EXPLORER_URL, or the addresses show without a link.
-const EXPLORER_URL =
-  process.env.NEXT_PUBLIC_EXPLORER_URL ??
-  (NETWORK === "testnet" ? "https://explorer.testnet.arc.io" : undefined);
 
 interface FooterLink {
   label: string;

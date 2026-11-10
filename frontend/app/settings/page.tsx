@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import WalletSetup from "@/components/WalletSetup";
@@ -28,7 +29,10 @@ import {
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/lib/useAuth";
 import { NETWORK, NETWORK_LABEL } from "@/lib/network";
-import { FAUCET_URL } from "@/lib/testnet";
+import { explorerAddressUrl } from "@/lib/explorer";
+import { TELEGRAM_URL, X_URL } from "@/lib/community";
+import { FAUCET_URL, STAGES } from "@/lib/testnet";
+import type { Participant, TrackerData } from "@/lib/server/testnet-tracker";
 import { referralLink } from "@/lib/referral";
 import type { BankAccount } from "@/lib/types";
 
@@ -40,6 +44,9 @@ export default function SettingsPage() {
   const [inviteNote, setInviteNote] = useState("");
   const inviteInputRef = useRef<HTMLInputElement>(null);
   const [invited, setInvited] = useState<number | null>(null);
+  // undefined while loading, null when there is nothing to show (not on the tracker, or it failed).
+  const [progress, setProgress] = useState<Participant | null | undefined>(undefined);
+  const [debugCopied, setDebugCopied] = useState(false);
 
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -66,6 +73,11 @@ export default function SettingsPage() {
     api<{ count: number }>("/api/referrals")
       .then(({ count }) => setInvited(count))
       .catch(() => {});
+    if (NETWORK === "testnet") {
+      api<TrackerData>("/api/testnet")
+        .then((t) => setProgress(t.participants.find((p) => p.username === user.username) ?? null))
+        .catch(() => setProgress(null));
+    }
   }, [user]);
 
   const inviteLink = user ? referralLink(window.location.origin, user.username) : "";
@@ -104,6 +116,27 @@ export default function SettingsPage() {
     await navigator.clipboard.writeText(wallet);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  }
+
+  // What a bug report needs, without anything private (no email, phone or PIN).
+  async function copyDebugInfo() {
+    const commit = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+    const info = [
+      "Coven debug info",
+      `Network: ${NETWORK_LABEL}`,
+      `User: @${user?.username ?? "unknown"}`,
+      `Wallet: ${wallet ?? "none"}`,
+      ...(commit ? [`Version: ${commit}`] : []),
+      `Browser: ${navigator.userAgent}`,
+      `Time: ${new Date().toISOString()}`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(info);
+      setDebugCopied(true);
+      setTimeout(() => setDebugCopied(false), 1800);
+    } catch {
+      /* clipboard blocked: nothing to copy to */
+    }
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -217,9 +250,66 @@ export default function SettingsPage() {
                   )}
                   {copied ? "Copied" : "Copy"}
                 </button>
+                {explorerAddressUrl(wallet) && (
+                  <a
+                    href={explorerAddressUrl(wallet)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-ink-soft transition-colors duration-200 hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    Explorer <span aria-hidden="true">↗</span>
+                  </a>
+                )}
               </div>
             )}
           </Card>
+
+          {/* Testnet only: how far this tester is through the eligibility stages */}
+          {NETWORK === "testnet" && progress !== null && (
+            <Card className="space-y-3">
+              {progress === undefined ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-ink">Your testnet progress</p>
+                      <p className="text-xs text-ink-mute">
+                        {STAGES.filter((s) => s.required && progress.stages[s.id]).length} of{" "}
+                        {STAGES.filter((s) => s.required).length} required stages
+                      </p>
+                    </div>
+                    {progress.eligible && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-pos-line bg-pos-soft px-2.5 py-1 text-[0.6875rem] font-bold text-pos">
+                        <CheckCircleIcon className="h-3.5 w-3.5" /> Eligible
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {STAGES.map((s) => (
+                      <li key={s.id} className="flex items-center gap-2 text-sm">
+                        {progress.stages[s.id] ? (
+                          <CheckCircleIcon className="h-4 w-4 shrink-0 text-pos" />
+                        ) : (
+                          <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border border-line-strong" />
+                        )}
+                        <span className={progress.stages[s.id] ? "text-ink" : "text-ink-soft"}>
+                          {s.label}
+                          {!s.required && <span className="text-ink-mute"> (optional)</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-ink-mute">
+                    Updates about every 30 seconds.{" "}
+                    <Link href="/testnet" className="font-semibold text-accent hover:underline">
+                      See the full tracker
+                    </Link>
+                  </p>
+                </>
+              )}
+            </Card>
+          )}
 
           {/* Testnet only: where to get free test USDC */}
           {NETWORK === "testnet" && wallet && (
@@ -250,6 +340,37 @@ export default function SettingsPage() {
               </div>
             </Card>
           )}
+
+          {/* Help */}
+          <Card className="space-y-3">
+            <div>
+              <p className="text-sm font-bold text-ink">Help and bug reports</p>
+              <p className="text-xs text-ink-mute">
+                Copy your debug info and paste it into your report. It has no email, phone or PIN.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="secondary" onClick={copyDebugInfo}>
+                {debugCopied ? "Debug info copied" : "Copy debug info"}
+              </Button>
+              <a
+                href={TELEGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-lg border border-line px-3.5 py-2 text-sm font-bold text-ink transition-colors duration-200 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Telegram <span aria-hidden="true" className="ml-1">↗</span>
+              </a>
+              <a
+                href={X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-lg border border-line px-3.5 py-2 text-sm font-bold text-ink transition-colors duration-200 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                X <span aria-hidden="true" className="ml-1">↗</span>
+              </a>
+            </div>
+          </Card>
 
           {/* Invite */}
           <Card className="space-y-3.5">

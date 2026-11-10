@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CovenMark } from "@/components/Icons";
 import { NETWORK, NETWORK_LABEL, ARC_CHAIN_ID } from "@/lib/network";
+import { EXPLORER_URL } from "@/lib/explorer";
+import { GITHUB_URL, TELEGRAM_URL, X_URL } from "@/lib/community";
 import { FAUCET_URL as FAUCET, STAGES, TRACKER_ENABLED, TX_KINDS, type TxKind } from "@/lib/testnet";
 import DocsNav, { type NavGroup } from "./DocsNav";
 
@@ -17,14 +19,12 @@ export const metadata: Metadata = {
    ========================================================================== */
 
 const IS_TESTNET = NETWORK === "testnet";
-const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER_URL ?? (IS_TESTNET ? "https://explorer.testnet.arc.io" : undefined);
+const EXPLORER = EXPLORER_URL;
 const WHITEPAPER = "/whitepaper";
-const GITHUB = "https://github.com/MarvyNwaokobia/Coven";
+const GITHUB = GITHUB_URL;
 // Official links. Env can override them (e.g. a staging deployment); otherwise these are used.
 const SITE_URL = "https://covenpay.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.includes("localhost") ? SITE_URL : (process.env.NEXT_PUBLIC_APP_URL || SITE_URL);
-const X_URL = process.env.NEXT_PUBLIC_X_URL || "https://x.com/Covenpay";
-const TELEGRAM_URL = process.env.NEXT_PUBLIC_TELEGRAM_URL || "https://t.me/+GVyHEXlo41M0Mzc0";
 
 const USDC = process.env.NEXT_PUBLIC_USDC_ADDRESS ?? (IS_TESTNET ? "0x3600000000000000000000000000000000000000" : undefined);
 const SPLIT_ESCROW = process.env.NEXT_PUBLIC_SPLIT_ESCROW_CONTRACT;
