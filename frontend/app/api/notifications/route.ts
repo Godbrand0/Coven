@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, getAuthedUser } from "@/lib/supabase";
-import { toNotification } from "@/lib/server/notifications";
+import { toNotification, notificationHref } from "@/lib/server/notifications";
 
 /**
  * GET /api/notifications - the activity feed, adapted to {title, body}
@@ -39,13 +39,28 @@ export async function GET(req: Request) {
     }
   }
 
+  // Goal and split activity points at the goal/split row; fetch their circles in two bulk lookups.
+  const refsOf = (prefix: string) =>
+    (activity ?? []).filter((a) => a.type.startsWith(prefix) && a.reference_id).map((a) => a.reference_id);
+  const circleByRef = new Map<string, string>();
+  const [goalRefs, splitRefs] = [refsOf("goal_"), refsOf("split_")];
+  if (goalRefs.length > 0) {
+    const { data } = await admin.from("circle_goals").select("id, circle_id").in("id", goalRefs);
+    for (const g of data ?? []) circleByRef.set(g.id, g.circle_id);
+  }
+  if (splitRefs.length > 0) {
+    const { data } = await admin.from("splits").select("id, circle_id").in("id", splitRefs);
+    for (const s of data ?? []) if (s.circle_id) circleByRef.set(s.id, s.circle_id);
+  }
+
   const notifications = (activity ?? []).map((a) => {
     const counterparty =
       a.type === "payment_sent" && a.reference_id
         ? recipientByPaymentId.get(a.reference_id)
         : undefined;
     const { title, body } = toNotification(a, counterparty);
-    return { id: a.id, title, body, read: a.read, created_at: a.created_at };
+    const href = notificationHref(a, a.reference_id ? circleByRef.get(a.reference_id) : null);
+    return { id: a.id, title, body, read: a.read, created_at: a.created_at, href };
   });
 
   return NextResponse.json({ notifications });

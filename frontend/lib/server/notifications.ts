@@ -86,3 +86,36 @@ export function toNotification(a: ActivityRow, counterpartyUsername?: string | n
 
   return map[a.type] ?? { title: "Notification", body: a.note ?? "" };
 }
+
+/**
+ * Where tapping a notification should go. Goal and split activity references the goal/split row, so
+ * the caller passes the owning circle id (looked up in bulk) for those types.
+ */
+export function notificationHref(a: ActivityRow, circleId?: string | null): string | null {
+  switch (a.type) {
+    case "payment_sent":
+    case "payment_received":
+    case "request_sent":
+    case "request_paid":
+    case "request_rejected":
+    case "request_declined":
+      return "/history";
+    case "request_received":
+      return "/home";
+    case "offramp_completed":
+    case "offramp_failed":
+      return "/cashout";
+    case "circle_joined":
+      return a.reference_id ? `/circles/${a.reference_id}` : "/circles";
+    case "goal_created":
+    case "goal_target_reached":
+    case "goal_withdrawal_requested":
+    case "goal_withdrawn":
+    case "split_created":
+    case "split_paid":
+    case "split_complete":
+      return circleId ? `/circles/${circleId}` : "/circles";
+    default:
+      return null;
+  }
+}

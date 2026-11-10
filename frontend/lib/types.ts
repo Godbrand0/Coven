@@ -143,6 +143,8 @@ export interface Notification {
   body: string;
   read: boolean;
   created_at: string;
+  /** In-app route to open when the notification is tapped, if it has one. */
+  href?: string | null;
 }
 
 export interface OfframpPayout {

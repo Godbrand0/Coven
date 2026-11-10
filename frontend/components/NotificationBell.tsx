@@ -1,39 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { NotificationBellIcon } from "./Icons";
+import { useAuth } from "@/lib/useAuth";
+import { useActivityRealtime, NOTIFICATIONS_READ_EVENT } from "@/lib/useActivityRealtime";
 
-const POLL_MS = 30_000;
+// Realtime pushes changes instantly; the poll is only a safety net for a dropped socket.
+const POLL_MS = 120_000;
 
 /** Bell with an unread-count badge, linking to /notifications. */
 export default function NotificationBell() {
+  const { user } = useAuth({ optional: true });
   const [count, setCount] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function poll() {
-      // Skip work while the tab is hidden; it resyncs on focus anyway.
-      if (document.visibilityState === "hidden") return;
-      try {
-        const { count } = await api<{ count: number }>("/api/notifications/unread-count");
-        if (!cancelled) setCount(count);
-      } catch {
-        // Stay quiet; the bell just won't update this cycle.
-      }
+  const fetchCount = useCallback(async () => {
+    try {
+      const { count } = await api<{ count: number }>("/api/notifications/unread-count");
+      setCount(count);
+    } catch {
+      // Stay quiet; the bell just won't update this cycle.
     }
+  }, []);
 
+  useActivityRealtime(user?.id, fetchCount);
+
+  useEffect(() => {
+    function poll() {
+      // Skip work while the tab is hidden; it resyncs on focus anyway.
+      if (document.visibilityState !== "hidden") fetchCount();
+    }
+    const onRead = () => setCount(0);
+    window.addEventListener(NOTIFICATIONS_READ_EVENT, onRead);
     poll();
     const id = setInterval(poll, POLL_MS);
     document.addEventListener("visibilitychange", poll);
     return () => {
-      cancelled = true;
       clearInterval(id);
       document.removeEventListener("visibilitychange", poll);
+      window.removeEventListener(NOTIFICATIONS_READ_EVENT, onRead);
     };
-  }, []);
+  }, [fetchCount]);
 
   return (
     <Link
