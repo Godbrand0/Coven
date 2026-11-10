@@ -28,3 +28,28 @@ export async function api<T = unknown>(
   }
   return body as T;
 }
+
+/**
+ * Download a file from one of our API routes. A plain link cannot carry the access token, so fetch it
+ * with the token and hand the browser the bytes.
+ */
+export async function apiDownload(path: string): Promise<void> {
+  const supabase = getSupabaseBrowser();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Download failed (${res.status})`);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "coven-statement.csv";
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

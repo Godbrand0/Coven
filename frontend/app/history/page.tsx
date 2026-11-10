@@ -1,115 +1,357 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
-import ActivityFeed from "@/components/ActivityFeed";
-import { SkeletonList, EmptyState, Button } from "@/components/ui";
-import { HistoryIcon } from "@/components/Icons";
-import { api } from "@/lib/api-client";
+import { SkeletonList, EmptyState, Button, Alert } from "@/components/ui";
+import { HistoryIcon, ReceiveIcon, SendIcon } from "@/components/Icons";
+import { api, apiDownload } from "@/lib/api-client";
 import { useAuth } from "@/lib/useAuth";
 import { formatUSDC } from "@/lib/format";
-import type { ActivityItem } from "@/lib/types";
+import { explorerTxUrl } from "@/lib/explorer";
+import { STATEMENT_KINDS, type StatementRow, type Totals } from "@/lib/statement-types";
 
-type FilterId = "all" | "sent" | "received" | "requests" | "splits" | "cashouts";
+type Direction = "all" | "in" | "out";
+type PresetId = "all" | "month" | "lastMonth" | "last3" | "year" | "custom";
 
-const FILTERS: { id: FilterId; label: string; match: (t: ActivityItem["type"]) => boolean }[] = [
-  { id: "all", label: "All", match: () => true },
-  { id: "sent", label: "Sent", match: (t) => t === "payment_sent" },
-  { id: "received", label: "Received", match: (t) => t === "payment_received" },
-  { id: "requests", label: "Requests", match: (t) => t.startsWith("request_") },
-  { id: "splits", label: "Splits", match: (t) => t.startsWith("split_") },
-  { id: "cashouts", label: "Cash outs", match: (t) => t.startsWith("offramp_") },
+const DIRECTIONS: { id: Direction; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "in", label: "Money in" },
+  { id: "out", label: "Money out" },
 ];
+
+const PRESETS: { id: PresetId; label: string }[] = [
+  { id: "all", label: "All time" },
+  { id: "month", label: "This month" },
+  { id: "lastMonth", label: "Last month" },
+  { id: "last3", label: "Last 3 months" },
+  { id: "year", label: "This year" },
+  { id: "custom", label: "Custom dates" },
+];
+
+interface Range {
+  from?: string;
+  to?: string;
+}
+
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+/** A yyyy-mm-dd from a date input, read as a day on this device's calendar. */
+const localDay = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+function rangeFor(preset: PresetId, customFrom: string, customTo: string): Range {
+  const now = new Date();
+  switch (preset) {
+    case "month":
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString() };
+    case "lastMonth":
+      return {
+        from: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString(),
+        to: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999).toISOString(),
+      };
+    case "last3":
+      return { from: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString() };
+    case "year":
+      return { from: new Date(now.getFullYear(), 0, 1).toISOString() };
+    case "custom":
+      return {
+        from: customFrom ? startOfDay(localDay(customFrom)).toISOString() : undefined,
+        to: customTo ? endOfDay(localDay(customTo)).toISOString() : undefined,
+      };
+    default:
+      return {};
+  }
+}
+
+function titleFor(r: StatementRow): string {
+  const who = r.counterparty ? `@${r.counterparty}` : "";
+  switch (r.kind) {
+    case "sent": return who ? `To ${who}` : "Sent";
+    case "received": return who ? `From ${who}` : "Received";
+    case "deposit": return "Deposit from outside Coven";
+    case "circle_send": return who ? `Circle payment to ${who}` : "Circle payment";
+    case "split_pay": return who ? `Split share to ${who}` : "Split share";
+    case "goal_contribution": return r.counterparty ? `Goal: ${r.counterparty}` : "Goal contribution";
+    case "goal_payout": return "Goal payout";
+    case "cash_out": return "Cash out to bank";
+  }
+}
+
+const dayLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "completed") return null;
+  const tone =
+    status === "failed"
+      ? "border-neg-line bg-neg-soft text-neg"
+      : "border-warn-line bg-warn-soft text-warn";
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold capitalize ${tone}`}>{status}</span>
+  );
+}
+
+function Row({ r }: { r: StatementRow }) {
+  const incoming = r.direction === "in";
+  const tx = r.txHash ? explorerTxUrl(r.txHash) : undefined;
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+          incoming ? "bg-pos-soft text-pos" : "bg-surface-2 text-ink-soft"
+        }`}
+      >
+        {incoming ? <ReceiveIcon className="h-4 w-4" /> : <SendIcon className="h-4 w-4" />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-ink">{titleFor(r)}</p>
+        <p className="truncate text-xs text-ink-mute">
+          {STATEMENT_KINDS[r.kind].label} ·{" "}
+          {new Date(r.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          {r.note ? ` · ${r.note}` : ""}
+          {tx && (
+            <>
+              {" · "}
+              <a href={tx} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent hover:underline">
+                View on explorer
+              </a>
+            </>
+          )}
+        </p>
+      </div>
+      <div className="shrink-0 space-y-1 text-right">
+        <p className={`amount text-sm font-extrabold ${incoming ? "text-pos" : "text-ink"}`}>
+          {incoming ? "+" : "−"}
+          {formatUSDC(r.amount)}
+        </p>
+        <StatusBadge status={r.status} />
+      </div>
+    </li>
+  );
+}
+
+const CHIP =
+  "min-h-9 shrink-0 cursor-pointer rounded-full border px-4 text-xs font-bold transition-[background-color,border-color,color,translate,scale] duration-200 ease-out-soft active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
+const chipTone = (on: boolean) =>
+  on ? "border-brand bg-brand text-white shadow-e1" : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink";
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const [items, setItems] = useState<ActivityItem[] | null>(null);
-  const [filter, setFilter] = useState<FilterId>("all");
+  const [preset, setPreset] = useState<PresetId>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [direction, setDirection] = useState<Direction>("all");
 
+  const [rows, setRows] = useState<StatementRow[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [totals, setTotals] = useState<Totals | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+
+  const range = useMemo(() => rangeFor(preset, customFrom, customTo), [preset, customFrom, customTo]);
+  const rangeQuery = useMemo(() => {
+    const q = new URLSearchParams();
+    if (range.from) q.set("from", range.from);
+    if (range.to) q.set("to", range.to);
+    return q;
+  }, [range]);
+  const customInvalid = preset === "custom" && !!customFrom && !!customTo && customFrom > customTo;
+
+  type Page = { rows: StatementRow[]; total: number; nextOffset: number | null; totals: Totals; truncated: boolean };
+
+  // A new range or direction starts again from the newest.
   useEffect(() => {
-    if (!user) return;
-    api<{ activity: ActivityItem[] }>("/api/activity")
-      .then(({ activity }) => setItems(activity))
-      .catch(() => setItems([]));
-  }, [user]);
+    if (!user || customInvalid) return;
+    let stale = false;
+    setRows(null);
+    setError("");
+    const q = new URLSearchParams(rangeQuery);
+    q.set("direction", direction);
+    api<Page>(`/api/history?${q}`)
+      .then((p) => {
+        if (stale) return;
+        setRows(p.rows);
+        setTotal(p.total);
+        setTotals(p.totals);
+        setNextOffset(p.nextOffset);
+        setTruncated(p.truncated);
+      })
+      .catch((e) => {
+        if (stale) return;
+        setRows([]);
+        setError(e instanceof Error ? e.message : "Could not load your history");
+      });
+    return () => {
+      stale = true;
+    };
+  }, [user, rangeQuery, direction, customInvalid]);
 
-  const active = FILTERS.find((f) => f.id === filter)!;
-  const filtered = useMemo(
-    () => items?.filter((i) => active.match(i.type)) ?? [],
-    [items, active]
-  );
-
-  /* Net movement across the current filter: the number people actually want. */
-  const totals = useMemo(() => {
-    let inflow = 0;
-    let outflow = 0;
-    for (const i of filtered) {
-      const n = Number(i.amount_usdc ?? 0);
-      if (!n) continue;
-      if (i.type === "payment_received" || i.type === "request_paid") inflow += n;
-      else if (i.type === "payment_sent" || i.type === "offramp_completed") outflow += n;
+  const loadMore = useCallback(async () => {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    try {
+      const q = new URLSearchParams(rangeQuery);
+      q.set("direction", direction);
+      q.set("offset", String(nextOffset));
+      const p = await api<Page>(`/api/history?${q}`);
+      setRows((r) => [...(r ?? []), ...p.rows]);
+      setNextOffset(p.nextOffset);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load more");
+    } finally {
+      setLoadingMore(false);
     }
-    return { inflow, outflow };
-  }, [filtered]);
+  }, [nextOffset, rangeQuery, direction]);
+
+  async function download() {
+    setDownloading(true);
+    setError("");
+    try {
+      await apiDownload(`/api/history/export?${rangeQuery}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  // Heading above the first row of each day.
+  const grouped = useMemo(() => {
+    const out: { day: string; rows: StatementRow[] }[] = [];
+    for (const r of rows ?? []) {
+      const day = dayLabel(r.at);
+      const last = out[out.length - 1];
+      if (last?.day === day) last.rows.push(r);
+      else out.push({ day, rows: [r] });
+    }
+    return out;
+  }, [rows]);
 
   return (
     <AppShell title="Transaction history" subtitle="Everything that moved through your account">
       <div className="mx-auto max-w-3xl space-y-4">
-        {/* Filters */}
-        <div className="scroll-fade-x no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1">
-          {FILTERS.map((f) => {
-            const on = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                aria-pressed={on}
-                className={`min-h-9 shrink-0 cursor-pointer rounded-full border px-4 text-xs font-bold transition-[background-color,border-color,color,translate,scale] duration-200 ease-out-soft active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-                  on
-                    ? "border-brand bg-brand text-white shadow-e1"
-                    : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink"
-                }`}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+        {/* Dates */}
+        <div className="scroll-fade-x no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1" role="group" aria-label="Date range">
+          {PRESETS.map((p) => (
+            <button key={p.id} onClick={() => setPreset(p.id)} aria-pressed={preset === p.id} className={`${CHIP} ${chipTone(preset === p.id)}`}>
+              {p.label}
+            </button>
+          ))}
         </div>
 
-        {/* In / out summary */}
-        {items !== null && filtered.length > 0 && (
+        {preset === "custom" && (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "From", value: customFrom, set: setCustomFrom, max: customTo || undefined, min: undefined },
+              { label: "To", value: customTo, set: setCustomTo, max: undefined, min: customFrom || undefined },
+            ].map((f) => (
+              <label key={f.label} className="space-y-1 text-xs font-semibold text-ink-soft">
+                {f.label}
+                <input
+                  type="date"
+                  value={f.value}
+                  min={f.min}
+                  max={f.max}
+                  onChange={(e) => f.set(e.target.value)}
+                  className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              </label>
+            ))}
+          </div>
+        )}
+        {customInvalid && <Alert>The start date is after the end date.</Alert>}
+
+        {/* Direction */}
+        <div className="flex gap-2" role="group" aria-label="Direction">
+          {DIRECTIONS.map((d) => (
+            <button key={d.id} onClick={() => setDirection(d.id)} aria-pressed={direction === d.id} className={`${CHIP} ${chipTone(direction === d.id)}`}>
+              {d.label}
+            </button>
+          ))}
+        </div>
+
+        {/* In / out for the whole range, not just the rows loaded so far */}
+        {totals && rows !== null && totals.count > 0 && (
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-line bg-surface p-4 shadow-e1">
               <p className="text-xs font-semibold text-ink-soft">Money in</p>
-              <p className="amount mt-1 text-xl font-extrabold text-pos">
-                +{formatUSDC(totals.inflow)}
-              </p>
+              <p className="amount mt-1 text-xl font-extrabold text-pos">+{formatUSDC(totals.moneyIn)}</p>
             </div>
             <div className="rounded-xl border border-line bg-surface p-4 shadow-e1">
               <p className="text-xs font-semibold text-ink-soft">Money out</p>
-              <p className="amount mt-1 text-xl font-extrabold text-ink">
-                −{formatUSDC(totals.outflow)}
-              </p>
+              <p className="amount mt-1 text-xl font-extrabold text-ink">−{formatUSDC(totals.moneyOut)}</p>
             </div>
           </div>
         )}
 
-        {items === null ? (
+        {/* Export */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-ink-mute">
+            {rows === null ? "Loading…" : `${total} ${total === 1 ? "transaction" : "transactions"}`}
+            {totals && totals.count > 0 && ` · ${totals.count} settled`}
+          </p>
+          <Button size="sm" variant="secondary" onClick={download} loading={downloading} disabled={customInvalid}>
+            Download CSV
+          </Button>
+        </div>
+
+        {error && <Alert>{error}</Alert>}
+        {truncated && (
+          <Alert>This range has a very large number of transactions. Narrow the dates to see all of them.</Alert>
+        )}
+
+        {rows === null ? (
           <SkeletonList rows={6} />
-        ) : filtered.length === 0 && filter !== "all" ? (
+        ) : rows.length === 0 && !error ? (
           <EmptyState
             icon={<HistoryIcon className="h-5 w-5" />}
-            title={`Nothing under “${active.label}”`}
-            subtitle="Try a different filter to see the rest of your history."
+            title="No transactions here"
+            subtitle={preset === "all" && direction === "all" ? "Payments you send and receive will show up here." : "Try a different date range or filter."}
             action={
-              <Button variant="secondary" size="sm" onClick={() => setFilter("all")}>
-                Show all activity
-              </Button>
+              preset !== "all" || direction !== "all" ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setPreset("all");
+                    setDirection("all");
+                  }}
+                >
+                  Show everything
+                </Button>
+              ) : undefined
             }
           />
         ) : (
-          <ActivityFeed items={filtered} />
+          <div className="space-y-4">
+            {grouped.map((g) => (
+              <section key={g.day} aria-label={g.day} className="space-y-2">
+                <h2 className="px-1 text-xs font-bold uppercase tracking-[0.08em] text-ink-mute">{g.day}</h2>
+                <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-e1">
+                  {g.rows.map((r) => (
+                    <Row key={r.id} r={r} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+            {nextOffset !== null && (
+              <div className="flex justify-center pt-1">
+                <Button variant="secondary" onClick={loadMore} loading={loadingMore}>
+                  Load more
+                </Button>
+              </div>
+            )}
+          </div>
         )}
+
+        <p className="px-1 text-xs leading-relaxed text-ink-mute">
+          The CSV covers the dates you picked, with times in UTC. Pending and failed payments are listed but not counted in the totals.
+        </p>
       </div>
     </AppShell>
   );

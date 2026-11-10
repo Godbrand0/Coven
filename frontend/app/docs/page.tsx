@@ -759,7 +759,7 @@ pnpm dev                     # http://localhost:3000`}</CodeBlock>
                 ["Circles", <Code key="c">/api/circles · /api/circles/create · /api/circles/[id] · /api/circles/[id]/send</Code>],
                 ["Splits", <Code key="s">/api/splits/create-challenge · create-confirm · [splitId]/pay-challenge · pay-confirm · action-challenge · action-confirm</Code>],
                 ["Goals", <Code key="g">/api/goals/create-challenge · create-confirm · [goalId]/contribute-* · withdraw-request-* · withdraw-approve-* · action-*</Code>],
-                ["Activity", <Code key="h">/api/activity · /api/history · /api/notifications · /api/notifications/unread-count</Code>],
+                ["Activity", <Code key="h">/api/activity · /api/history · /api/history/export · /api/notifications · /api/notifications/unread-count</Code>],
                 ["Invites", <Code key="r">/api/referrals · /api/referrals/claim</Code>],
                 ["Cash out", <Code key="o">/api/banks · /api/cashout/initiate · /api/cashout/[payoutId]/status</Code>],
                 ["Public", <Code key="t">/api/testnet · /api/health</Code>],
